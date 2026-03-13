@@ -23,7 +23,7 @@ COLOR_MAP = {
 class AttendanceApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Employee Attendance")
+        self.setWindowTitle("G-Number")
         self.setGeometry(100, 100, 2100, 950)
         self.current_employee = None
         self.employees = {}
