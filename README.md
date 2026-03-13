@@ -1,7 +1,6 @@
 # Employee Attendance Tracker
 
-![Screenshot for app.py](screenshot.png)
-![Screenshot for app_pyside.py](screenshot2.png)
+![Screenshot](screenshot2.png)
 
 A desktop application for managing employee attendance records using Excel.
 
@@ -9,32 +8,22 @@ A desktop application for managing employee attendance records using Excel.
 
 - **Employee Management**: Browse and search employees by ID or name
 - **Attendance Tracking**: Mark daily attendance with leave types
-- **Leave Types**: SL (Sick Leave), AL (Annual Leave), AB (Absent), NG (New Guard), TR (Training), R (Resigned/Terminated)
+- **Leave Types**: P (Present), SL (Sick Leave), AL (Annual Leave), AB (Absent), NG (New Guard), TR (Training), - (Resigned/Terminated)
 - **Calendar View**: Visual 31-day calendar showing attendance status
 - **Batch Entry**: Set attendance for multiple consecutive days
+- **Auto Fill**: Fill all empty cells with "P" for the current month
 
-## Requirements
+## Running the App
 
-```
-pandas
-openpyxl
-```
+### Option 1: Run .exe (Recommended)
+1. Copy `dist/app_pyside.exe` to your desired location
+2. Place `data.xlsx` in the same folder
+3. Double-click `app_pyside.exe`
 
-Install dependencies:
+### Option 2: Run with Python
 ```bash
-pip install -r requirements.txt
+venv\Scripts\python.exe app_pyside.py
 ```
-
-## Usage
-
-1. Ensure `data.xlsx` exists in the project folder with employee data
-2. Run the application:
-   ```bash
-   python app.py
-   ```
-3. Select an employee from the list
-4. Choose leave type and date range
-5. Click "Set Entry" to save
 
 ## Data Format
 
