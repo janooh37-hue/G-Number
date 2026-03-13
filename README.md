@@ -1,5 +1,7 @@
 # Employee Attendance Tracker
 
+![Screenshot](screenshot.png)
+
 A desktop application for managing employee attendance records using Excel.
 
 ## Features
