@@ -139,42 +139,124 @@ class AttendanceApp(QMainWindow):
         scroll.setWidgetResizable(True)
         scroll.setObjectName("calendar_scroll")
         
-        cal_widget = QWidget()
-        cal_grid = QGridLayout(cal_widget)
-        cal_grid.setSpacing(4)
+        self.cal_widget = QWidget()
+        self.cal_layout = QVBoxLayout(self.cal_widget)
+        self.cal_layout.setSpacing(2)
+        self.cal_layout.setContentsMargins(0, 0, 0, 0)
         
         self.day_widgets = {}
         self.day_number_widgets = {}
-        for day in range(1, 32):
-            col_frame = QFrame()
-            col_frame.setObjectName("day_cell")
-            cell_layout = QVBoxLayout(col_frame)
-            cell_layout.setContentsMargins(4, 2, 4, 2)
-            cell_layout.setSpacing(2)
-            cell_layout.setAlignment(Qt.AlignTop)
-            
-            day_label = QLabel(f"{day}")
-            day_label.setObjectName("day_number")
-            day_label.setFixedHeight(20)
-            day_label.setAlignment(Qt.AlignCenter)
-            cell_layout.addWidget(day_label)
-            
-            status_label = QLabel("P")
-            status_label.setObjectName("day_status")
-            status_label.setFixedHeight(28)
-            status_label.setAlignment(Qt.AlignCenter)
-            cell_layout.addWidget(status_label)
-            
-            self.day_widgets[day] = status_label
-            self.day_number_widgets[day] = day_label
-            cal_grid.addWidget(col_frame, 0, day-1)
+        self.calendar_rows = {}
         
-        scroll.setWidget(cal_widget)
+        self.create_calendar_row("default")
+        
+        scroll.setWidget(self.cal_widget)
         right_layout.addWidget(scroll)
         
         content.addWidget(right, 1)
         
         self.populate_employee_list()
+    
+    def create_calendar_row(self, row_id):
+        row_frame = QFrame()
+        row_frame.setObjectName("calendar_row")
+        row_layout = QHBoxLayout(row_frame)
+        row_layout.setSpacing(2)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        
+        emp_label = QLabel("")
+        emp_label.setObjectName("calendar_emp_label")
+        emp_label.setFixedWidth(80)
+        row_layout.addWidget(emp_label)
+        
+        days_container = QWidget()
+        days_grid = QGridLayout(days_container)
+        days_grid.setSpacing(2)
+        days_grid.setContentsMargins(0, 0, 0, 0)
+        
+        day_widgets_row = {}
+        day_number_widgets_row = {}
+        
+        for day in range(1, 32):
+            col_frame = QFrame()
+            col_frame.setObjectName("day_cell")
+            cell_layout = QVBoxLayout(col_frame)
+            cell_layout.setContentsMargins(2, 1, 2, 1)
+            cell_layout.setSpacing(1)
+            cell_layout.setAlignment(Qt.AlignTop)
+            
+            day_label = QLabel(f"{day}")
+            day_label.setObjectName("day_number")
+            day_label.setFixedHeight(16)
+            day_label.setAlignment(Qt.AlignCenter)
+            cell_layout.addWidget(day_label)
+            
+            status_label = QLabel("P")
+            status_label.setObjectName("day_status")
+            status_label.setFixedHeight(24)
+            status_label.setAlignment(Qt.AlignCenter)
+            cell_layout.addWidget(status_label)
+            
+            day_widgets_row[day] = status_label
+            day_number_widgets_row[day] = day_label
+            days_grid.addWidget(col_frame, 0, day-1)
+        
+        row_layout.addWidget(days_container)
+        
+        self.calendar_rows[row_id] = {"frame": row_frame, "emp_label": emp_label, "widgets": day_widgets_row, "numbers": day_number_widgets_row}
+        
+        if row_id == "default":
+            self.cal_layout.addWidget(row_frame)
+        
+        return row_frame
+    
+    def _recreate_calendar_row(self, row_id):
+        row_frame = QFrame()
+        row_frame.setObjectName("calendar_row")
+        row_layout = QHBoxLayout(row_frame)
+        row_layout.setSpacing(2)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        
+        emp_label = QLabel("")
+        emp_label.setObjectName("calendar_emp_label")
+        emp_label.setFixedWidth(80)
+        row_layout.addWidget(emp_label)
+        
+        days_container = QWidget()
+        days_grid = QGridLayout(days_container)
+        days_grid.setSpacing(2)
+        days_grid.setContentsMargins(0, 0, 0, 0)
+        
+        day_widgets_row = {}
+        day_number_widgets_row = {}
+        
+        for day in range(1, 32):
+            col_frame = QFrame()
+            col_frame.setObjectName("day_cell")
+            cell_layout = QVBoxLayout(col_frame)
+            cell_layout.setContentsMargins(2, 1, 2, 1)
+            cell_layout.setSpacing(1)
+            cell_layout.setAlignment(Qt.AlignTop)
+            
+            day_label = QLabel(f"{day}")
+            day_label.setObjectName("day_number")
+            day_label.setFixedHeight(16)
+            day_label.setAlignment(Qt.AlignCenter)
+            cell_layout.addWidget(day_label)
+            
+            status_label = QLabel("P")
+            status_label.setObjectName("day_status")
+            status_label.setFixedHeight(24)
+            status_label.setAlignment(Qt.AlignCenter)
+            cell_layout.addWidget(status_label)
+            
+            day_widgets_row[day] = status_label
+            day_number_widgets_row[day] = day_label
+            days_grid.addWidget(col_frame, 0, day-1)
+        
+        row_layout.addWidget(days_container)
+        
+        return {"frame": row_frame, "emp_label": emp_label, "widgets": day_widgets_row, "numbers": day_number_widgets_row}
     
     def apply_styles(self):
         self.setStyleSheet("""
@@ -315,11 +397,22 @@ class AttendanceApp(QMainWindow):
             }
             #day_status {
                 color: black;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: bold;
                 qproperty-alignment: AlignCenter;
                 background-color: #27ae60;
+                border-radius: 3px;
+            }
+            #calendar_emp_label {
+                color: #cdd6f4;
+                font-size: 10px;
+                font-weight: bold;
+                padding: 2px;
+                background-color: #313244;
                 border-radius: 4px;
+            }
+            #calendar_row {
+                background-color: transparent;
             }
         """)
     
@@ -335,6 +428,100 @@ class AttendanceApp(QMainWindow):
     
     def on_search(self, text):
         self.populate_employee_list(text)
+        
+        if not text:
+            self.show_single_employee(None)
+            return
+        
+        matches = [g for g in self.employees.keys() if g.startswith(text)]
+        
+        if len(matches) > 1:
+            self.show_multiple_employees(matches)
+        elif len(matches) == 1:
+            self.show_single_employee(matches[0])
+        else:
+            self.show_single_employee(None)
+    
+    def show_multiple_employees(self, g_nums):
+        for row_id in list(self.calendar_rows.keys()):
+            if row_id != "default":
+                if "frame" in self.calendar_rows[row_id]:
+                    self.calendar_rows[row_id]["frame"].deleteLater()
+                del self.calendar_rows[row_id]
+        
+        while self.cal_layout.count() > 0:
+            item = self.cal_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        self.current_employee = None
+        self.emp_info.setText(f"{len(g_nums)} employees found")
+        self.emp_info.setStyleSheet("color: #f9e2af; font-size: 13px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
+        self.stats_label.setText("")
+        
+        for i, g_num in enumerate(g_nums):
+            row_id = f"emp_{i}"
+            self.create_calendar_row(row_id)
+            
+            row_data = self.calendar_rows[row_id]
+            row_data["frame"].show()
+            row_data["emp_label"].setText(f"{g_num}\n{self.employees[g_num]['name'][:10]}")
+            self.cal_layout.addWidget(row_data["frame"])
+            
+            self.load_attendance_to_row(g_num, row_data["widgets"], row_data["numbers"])
+    
+    def show_single_employee(self, g_num):
+        while self.cal_layout.count() > 0:
+            item = self.cal_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        if "default" not in self.calendar_rows:
+            self.create_calendar_row("default")
+        else:
+            self.calendar_rows["default"] = self._recreate_calendar_row("default")
+        
+        self.calendar_rows["default"]["frame"].show()
+        self.cal_layout.addWidget(self.calendar_rows["default"]["frame"])
+        
+        for row_id in self.calendar_rows:
+            if row_id != "default":
+                self.calendar_rows[row_id]["frame"].hide()
+        
+        if g_num:
+            self.current_employee = g_num
+            self.emp_info.setText(f"{self.employees[g_num]['name']}\n({g_num})")
+            self.emp_info.setStyleSheet("color: #89b4fa; font-size: 13px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
+            self.load_attendance()
+            self.load_stats(g_num)
+        else:
+            self.current_employee = None
+            self.emp_info.setText("Select an employee")
+            self.emp_info.setStyleSheet("color: #a6adc8; font-size: 13px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
+            self.stats_label.setText("")
+            self.clear_calendar_row(self.calendar_rows["default"]["widgets"], self.calendar_rows["default"]["numbers"])
+    
+    def clear_calendar_row(self, widgets, number_widgets):
+        for day in range(1, 32):
+            widgets[day].setText("P")
+            widgets[day].setStyleSheet("""
+                color: black;
+                font-size: 10px;
+                font-weight: bold;
+                qproperty-alignment: AlignCenter;
+                background-color: #45475a;
+                border-radius: 3px;
+            """)
+            number_widgets[day].setStyleSheet("""
+                color: #6c7086;
+                font-size: 9px;
+                font-weight: bold;
+                qproperty-alignment: AlignCenter;
+                background-color: #45475a;
+                border-radius: 2px;
+                padding: 1px;
+                border: 2px solid #45475a;
+            """)
     
     def on_select_employee(self, item):
         g_num = item.text().split(" - ")[0]
@@ -351,7 +538,12 @@ class AttendanceApp(QMainWindow):
         if not self.current_employee:
             return
         
-        g_num = self.current_employee
+        default_row = self.calendar_rows.get("default")
+        if default_row:
+            self.load_attendance_to_row(self.current_employee, default_row["widgets"], default_row["numbers"])
+            self.load_stats(self.current_employee)
+    
+    def load_attendance_to_row(self, g_num, widgets, number_widgets):
         row_num = self.employees[g_num]["row"]
         
         try:
@@ -379,26 +571,30 @@ class AttendanceApp(QMainWindow):
                     day_bg = "#45475a"
                     day_fg = "#6c7086"
                 
-                self.day_widgets[day].setText(display)
-                self.day_widgets[day].setStyleSheet(f"""
+                widgets[day].setText(display)
+                widgets[day].setStyleSheet(f"""
                     color: {fg_color};
-                    font-size: 11px;
-                    font-weight: bold;
-                    qproperty-alignment: AlignCenter;
-                    background-color: {bg_color};
-                    border-radius: 4px;
-                """)
-                
-                self.day_number_widgets[day].setStyleSheet(f"""
-                    color: {day_fg};
                     font-size: 10px;
                     font-weight: bold;
                     qproperty-alignment: AlignCenter;
-                    background-color: {day_bg};
+                    background-color: {bg_color};
                     border-radius: 3px;
-                    padding: 2px;
+                """)
+                
+                number_widgets[day].setStyleSheet(f"""
+                    color: {day_fg};
+                    font-size: 9px;
+                    font-weight: bold;
+                    qproperty-alignment: AlignCenter;
+                    background-color: {day_bg};
+                    border-radius: 2px;
+                    padding: 1px;
                     {day_border}
                 """)
+            
+            wb.close()
+        except Exception as e:
+            pass
             
             wb.close()
         except Exception as e:
