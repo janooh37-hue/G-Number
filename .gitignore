@@ -13,4 +13,5 @@ build/
 .env
 .venv
 data.xlsx
+VBA_Setup_Instructions.txt
 *.bas
