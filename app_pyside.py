@@ -2,7 +2,7 @@ import sys
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                 QHBoxLayout, QLabel, QListWidget, QLineEdit, QRadioButton, 
                                 QPushButton, QFrame, QGroupBox, QScrollArea, QGridLayout, QMessageBox)
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEventLoop, QTimer
 import pandas as pd
 from openpyxl import load_workbook
 from datetime import datetime
@@ -12,11 +12,11 @@ SHEET_NAME = 'Sheet1'
 
 COLOR_MAP = {
     "P": "#27ae60",
-    "SL": "#e74c3c", 
-    "AL": "#f39c12",
-    "AB": "#9b59b6",
-    "NG": "#3498db", 
-    "TR": "#1abc9c",
+    "SL": "#1abc9c", 
+    "AL": "#3498db",
+    "AB": "#e74c3c",
+    "NG": "#f39c12", 
+    "TR": "#9b59b6",
     "-": "#7f8c8d"
 }
 
@@ -24,7 +24,7 @@ class AttendanceApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Employee Attendance")
-        self.setGeometry(100, 100, 1300, 700)
+        self.setGeometry(100, 100, 2100, 950)
         self.current_employee = None
         self.employees = {}
         self.current_day = datetime.now().day
@@ -122,6 +122,14 @@ class AttendanceApp(QMainWindow):
         self.set_btn.clicked.connect(self.set_entry)
         left_layout.addWidget(self.set_btn)
         
+        self.auto_present_btn = QPushButton("Auto Fill")
+        self.auto_present_btn.clicked.connect(self.auto_fill_present)
+        left_layout.addWidget(self.auto_present_btn)
+        
+        # TODO: Uncomment below to show button only after day 18
+        current_day = datetime.now().day
+        self.auto_present_btn.setVisible(current_day >= 18)
+        
         self.status = QLabel("")
         self.status.setObjectName("status")
         left_layout.addWidget(self.status)
@@ -153,6 +161,19 @@ class AttendanceApp(QMainWindow):
         scroll.setWidget(self.cal_widget)
         right_layout.addWidget(scroll)
         
+        legend_label = QLabel(
+            "<span style='color:#27ae60'>●</span> P=Present &nbsp;&nbsp;"
+            "<span style='color:#1abc9c'>●</span> SL=Sick Leave &nbsp;&nbsp;"
+            "<span style='color:#3498db'>●</span> AL=Annual Leave &nbsp;&nbsp;"
+            "<span style='color:#e74c3c'>●</span> AB=Absent &nbsp;&nbsp;"
+            "<span style='color:#f39c12'>●</span> NG=New Guard &nbsp;&nbsp;"
+            "<span style='color:#9b59b6'>●</span> TR=Training &nbsp;&nbsp;"
+            "<span style='color:#7f8c8d'>●</span> -=Resigned"
+        )
+        legend_label.setObjectName("legend_label")
+        legend_label.setAlignment(Qt.AlignCenter)
+        right_layout.addWidget(legend_label)
+        
         content.addWidget(right, 1)
         
         self.populate_employee_list()
@@ -163,11 +184,6 @@ class AttendanceApp(QMainWindow):
         row_layout = QHBoxLayout(row_frame)
         row_layout.setSpacing(2)
         row_layout.setContentsMargins(0, 0, 0, 0)
-        
-        emp_label = QLabel("")
-        emp_label.setObjectName("calendar_emp_label")
-        emp_label.setFixedWidth(80)
-        row_layout.addWidget(emp_label)
         
         days_container = QWidget()
         days_grid = QGridLayout(days_container)
@@ -187,13 +203,13 @@ class AttendanceApp(QMainWindow):
             
             day_label = QLabel(f"{day}")
             day_label.setObjectName("day_number")
-            day_label.setFixedHeight(16)
+            day_label.setFixedHeight(22)
             day_label.setAlignment(Qt.AlignCenter)
             cell_layout.addWidget(day_label)
             
             status_label = QLabel("P")
             status_label.setObjectName("day_status")
-            status_label.setFixedHeight(24)
+            status_label.setFixedHeight(32)
             status_label.setAlignment(Qt.AlignCenter)
             cell_layout.addWidget(status_label)
             
@@ -203,7 +219,7 @@ class AttendanceApp(QMainWindow):
         
         row_layout.addWidget(days_container)
         
-        self.calendar_rows[row_id] = {"frame": row_frame, "emp_label": emp_label, "widgets": day_widgets_row, "numbers": day_number_widgets_row}
+        self.calendar_rows[row_id] = {"frame": row_frame, "widgets": day_widgets_row, "numbers": day_number_widgets_row}
         
         if row_id == "default":
             self.cal_layout.addWidget(row_frame)
@@ -217,11 +233,6 @@ class AttendanceApp(QMainWindow):
         row_layout.setSpacing(2)
         row_layout.setContentsMargins(0, 0, 0, 0)
         
-        emp_label = QLabel("")
-        emp_label.setObjectName("calendar_emp_label")
-        emp_label.setFixedWidth(80)
-        row_layout.addWidget(emp_label)
-        
         days_container = QWidget()
         days_grid = QGridLayout(days_container)
         days_grid.setSpacing(2)
@@ -240,13 +251,13 @@ class AttendanceApp(QMainWindow):
             
             day_label = QLabel(f"{day}")
             day_label.setObjectName("day_number")
-            day_label.setFixedHeight(16)
+            day_label.setFixedHeight(22)
             day_label.setAlignment(Qt.AlignCenter)
             cell_layout.addWidget(day_label)
             
             status_label = QLabel("P")
             status_label.setObjectName("day_status")
-            status_label.setFixedHeight(24)
+            status_label.setFixedHeight(32)
             status_label.setAlignment(Qt.AlignCenter)
             cell_layout.addWidget(status_label)
             
@@ -256,7 +267,7 @@ class AttendanceApp(QMainWindow):
         
         row_layout.addWidget(days_container)
         
-        return {"frame": row_frame, "emp_label": emp_label, "widgets": day_widgets_row, "numbers": day_number_widgets_row}
+        return {"frame": row_frame, "widgets": day_widgets_row, "numbers": day_number_widgets_row}
     
     def apply_styles(self):
         self.setStyleSheet("""
@@ -272,14 +283,20 @@ class AttendanceApp(QMainWindow):
                 qproperty-alignment: AlignCenter;
             }
             #section_title {
-                color: #89b4fa;
+                color: #cdd6f4;
                 font-size: 14px;
                 font-weight: bold;
                 padding: 8px 0;
             }
+            #legend_label {
+                color: #cdd6f4;
+                font-size: 12px;
+                font-weight: bold;
+                padding: 8px;
+            }
             #emp_info {
-                color: #a6adc8;
-                font-size: 13px;
+                color: #cdd6f4;
+                font-size: 16px;
                 font-weight: bold;
                 padding: 10px;
                 background-color: #313244;
@@ -310,7 +327,7 @@ class AttendanceApp(QMainWindow):
                 color: #cdd6f4;
                 border: 1px solid #45475a;
                 border-radius: 8px;
-                font-size: 13px;
+                font-size: 16px;
             }
             QListWidget::item {
                 padding: 6px 8px;
@@ -318,14 +335,14 @@ class AttendanceApp(QMainWindow):
                 min-height: 24px;
             }
             QListWidget::item:selected {
-                background-color: #89b4fa;
+                background-color: #cdd6f4;
                 color: #1e1e2e;
             }
             QListWidget::item:hover {
                 background-color: #45475a;
             }
             QGroupBox {
-                color: #89b4fa;
+                color: #cdd6f4;
                 font-weight: bold;
                 border: 1px solid #45475a;
                 border-radius: 8px;
@@ -353,10 +370,10 @@ class AttendanceApp(QMainWindow):
             QRadioButton::indicator:checked {
                 border: 2px solid #89b4fa;
                 border-radius: 8px;
-                background-color: #89b4fa;
+                background-color: #cdd6f4;
             }
             QPushButton {
-                background-color: #89b4fa;
+                background-color: #cdd6f4;
                 color: #1e1e2e;
                 border: none;
                 border-radius: 8px;
@@ -388,7 +405,7 @@ class AttendanceApp(QMainWindow):
             }
             #day_number {
                 color: #6c7086;
-                font-size: 10px;
+                font-size: 14px;
                 font-weight: bold;
                 qproperty-alignment: AlignCenter;
                 background-color: #45475a;
@@ -397,7 +414,7 @@ class AttendanceApp(QMainWindow):
             }
             #day_status {
                 color: black;
-                font-size: 10px;
+                font-size: 14px;
                 font-weight: bold;
                 qproperty-alignment: AlignCenter;
                 background-color: #27ae60;
@@ -456,7 +473,7 @@ class AttendanceApp(QMainWindow):
         
         self.current_employee = None
         self.emp_info.setText(f"{len(g_nums)} employees found")
-        self.emp_info.setStyleSheet("color: #f9e2af; font-size: 13px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
+        self.emp_info.setStyleSheet("color: #cdd6f4; font-size: 16px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
         self.stats_label.setText("")
         
         for i, g_num in enumerate(g_nums):
@@ -465,10 +482,12 @@ class AttendanceApp(QMainWindow):
             
             row_data = self.calendar_rows[row_id]
             row_data["frame"].show()
-            row_data["emp_label"].setText(f"{g_num}\n{self.employees[g_num]['name'][:10]}")
             self.cal_layout.addWidget(row_data["frame"])
             
             self.load_attendance_to_row(g_num, row_data["widgets"], row_data["numbers"])
+        
+        QApplication.processEvents()
+        self.cal_widget.updateGeometry()
     
     def show_single_employee(self, g_num):
         while self.cal_layout.count() > 0:
@@ -491,13 +510,13 @@ class AttendanceApp(QMainWindow):
         if g_num:
             self.current_employee = g_num
             self.emp_info.setText(f"{self.employees[g_num]['name']}\n({g_num})")
-            self.emp_info.setStyleSheet("color: #89b4fa; font-size: 13px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
+            self.emp_info.setStyleSheet("color: #cdd6f4; font-size: 16px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
             self.load_attendance()
             self.load_stats(g_num)
         else:
             self.current_employee = None
             self.emp_info.setText("Select an employee")
-            self.emp_info.setStyleSheet("color: #a6adc8; font-size: 13px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
+            self.emp_info.setStyleSheet("color: #cdd6f4; font-size: 16px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
             self.stats_label.setText("")
             self.clear_calendar_row(self.calendar_rows["default"]["widgets"], self.calendar_rows["default"]["numbers"])
     
@@ -506,7 +525,7 @@ class AttendanceApp(QMainWindow):
             widgets[day].setText("P")
             widgets[day].setStyleSheet("""
                 color: black;
-                font-size: 10px;
+                font-size: 14px;
                 font-weight: bold;
                 qproperty-alignment: AlignCenter;
                 background-color: #45475a;
@@ -514,7 +533,7 @@ class AttendanceApp(QMainWindow):
             """)
             number_widgets[day].setStyleSheet("""
                 color: #6c7086;
-                font-size: 9px;
+                font-size: 14px;
                 font-weight: bold;
                 qproperty-alignment: AlignCenter;
                 background-color: #45475a;
@@ -527,7 +546,7 @@ class AttendanceApp(QMainWindow):
         g_num = item.text().split(" - ")[0]
         self.current_employee = g_num
         self.emp_info.setText(f"{self.employees[g_num]['name']}\n({g_num})")
-        self.emp_info.setStyleSheet("color: #89b4fa; font-size: 13px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
+        self.emp_info.setStyleSheet("color: #cdd6f4; font-size: 16px; font-weight: bold; padding: 10px; background-color: #313244; border-radius: 8px; qproperty-alignment: AlignCenter;")
         self.load_attendance()
         self.load_stats(g_num)
     
@@ -574,7 +593,7 @@ class AttendanceApp(QMainWindow):
                 widgets[day].setText(display)
                 widgets[day].setStyleSheet(f"""
                     color: {fg_color};
-                    font-size: 10px;
+                    font-size: 14px;
                     font-weight: bold;
                     qproperty-alignment: AlignCenter;
                     background-color: {bg_color};
@@ -583,7 +602,7 @@ class AttendanceApp(QMainWindow):
                 
                 number_widgets[day].setStyleSheet(f"""
                     color: {day_fg};
-                    font-size: 9px;
+                    font-size: 14px;
                     font-weight: bold;
                     qproperty-alignment: AlignCenter;
                     background-color: {day_bg};
@@ -616,12 +635,12 @@ class AttendanceApp(QMainWindow):
                     counts[display] += 1
             
             stats_text = f"""
-<span style='color: #a6e3a1;'>● Present:</span> {counts['P']} &nbsp;
-<span style='color: #e74c3c;'>● SL:</span> {counts['SL']} &nbsp;
-<span style='color: #f39c12;'>● AL:</span> {counts['AL']}<br>
-<span style='color: #9b59b6;'>● AB:</span> {counts['AB']} &nbsp;
-<span style='color: #3498db;'>● NG:</span> {counts['NG']} &nbsp;
-<span style='color: #1abc9c;'>● TR:</span> {counts['TR']}
+<span style='color: {COLOR_MAP["P"]};'>● P:</span> {counts['P']} &nbsp;
+<span style='color: {COLOR_MAP["SL"]};'>● SL:</span> {counts['SL']} &nbsp;
+<span style='color: {COLOR_MAP["AL"]};'>● AL:</span> {counts['AL']}<br>
+<span style='color: {COLOR_MAP["AB"]};'>● AB:</span> {counts['AB']} &nbsp;
+<span style='color: {COLOR_MAP["NG"]};'>● NG:</span> {counts['NG']} &nbsp;
+<span style='color: {COLOR_MAP["TR"]};'>● TR:</span> {counts['TR']}
 """
             self.stats_label.setText(stats_text)
             wb.close()
@@ -665,6 +684,52 @@ class AttendanceApp(QMainWindow):
             self.status.setText(f"✓ Set {leave_type} for days: {', '.join(updated_days)}")
             self.load_attendance()
             self.load_stats(g_num)
+        except PermissionError:
+            QMessageBox.critical(self, "Error", "Close data.xlsx in Excel first!")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed: {str(e)}")
+    
+    def auto_fill_present(self):
+        try:
+            wb = load_workbook(FILE_PATH)
+            ws = wb[SHEET_NAME]
+            
+            last_row = 5
+            for row in range(6, 1000):
+                g_num = ws.cell(row=row, column=2).value
+                if g_num and str(g_num).strip() and str(g_num).startswith('G'):
+                    last_row = row
+            
+            if last_row == 5:
+                QMessageBox.warning(self, "Error", "No employees found!")
+                wb.close()
+                return
+                
+            reply = QMessageBox.question(
+                self, "Confirm", 
+                f"This will fill all empty cells in columns F to AJ (rows 6-{last_row}) with 'P'. Continue?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                wb.close()
+                return
+            
+            filled_count = 0
+            for row in range(6, last_row + 1):
+                for col in range(6, 37):
+                    cell = ws.cell(row=row, column=col)
+                    if cell.value is None or str(cell.value).strip() == "":
+                        cell.value = "P"
+                        filled_count += 1
+            
+            wb.save(FILE_PATH)
+            wb.close()
+            
+            if filled_count > 0:
+                QMessageBox.information(self, "Done", f"Added 'P' to {filled_count} cells")
+            else:
+                QMessageBox.information(self, "Done", "All cells already filled")
+            self.load_attendance()
         except PermissionError:
             QMessageBox.critical(self, "Error", "Close data.xlsx in Excel first!")
         except Exception as e:
