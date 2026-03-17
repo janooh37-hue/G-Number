@@ -1,6 +1,7 @@
 # Employee Attendance Tracker
 
-![Screenshot](screenshot.png)
+![Screenshot for app.py](screenshot.png)
+![Screenshot for app_pyside.py](screenshot2.png)
 
 A desktop application for managing employee attendance records using Excel.
 
