@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(QT_QPA_PLATFORM=offscreen python)",
+      "Bash(python)",
+      "Bash(cp \"before .xlsx\" data.xlsx)",
+      "Bash(cp \"before .xlsx\" test_data.xlsx)",
+      "Bash(timeout 30 python -c ' *)",
+      "Bash(timeout 45 python -c ' *)"
+    ]
+  }
+}
