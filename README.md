@@ -1,6 +1,6 @@
 # Employee Attendance Tracker
 
-![Screenshot](screenshot2.png)
+![Screenshot](assets/screenshot3.png)
 
 A desktop application for managing employee attendance records stored in Excel, built with PySide6.
 
